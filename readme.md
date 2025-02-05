@@ -1,29 +1,23 @@
 # 本地RAG问答系统
 
-🚀 基于本地大模型的智能文档问答系统，支持PDF文档解析，联网搜索与自然语言问答
+🚀 基于本地大模型的智能文档问答系统，支持PDF文档解析与自然语言问答，🎯新增联网搜索增强能力
 
 ## 为什么选择本地RAG？
 
 🔒 **私有数据安全**：全程本地处理，敏感文档无需上传第三方服务
-
 ⚡ **实时响应**：基于本地向量数据库实现毫秒级语义检索
-
 💡 **领域适配**：可针对专业领域文档定制知识库
-
-🌐 **离线可用**：无需互联网连接，保护数据隐私
-
+🌐 **离线/在线双模式**：🎯支持本地文档与网络结果智能融合
 💰 **成本可控**：避免云服务按次计费，长期使用成本更低
 
 ## 功能特性
 
 📄 PDF文档解析与向量化存储
-
 🧠 基于DeepSeek-7B本地大模型
-
 ⚡ 流式回答生成
-
 🔍 语义检索与上下文理解
-
+🎯🌐 联网搜索增强（SerpAPI集成）
+🎯🔗 多源结果智能整合与矛盾检测
 🖥️ 友好的Web交互界面
 
 ## 快速开始
@@ -33,6 +27,7 @@
 - Python 3.9+
 - 内存：至少8GB
 - 显存：至少4GB（推荐8GB）
+- 🎯 SerpAPI账号（免费额度可用）
 
 ### 安装步骤
 
@@ -54,14 +49,20 @@ rag_env\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-4. 安装Ollama服务：
+4. 配置环境变量：
+```bash
+# 复制示例文件
+cp .env.example .env
+# 编辑.env文件添加你的API密钥
+SERPAPI_KEY=your_serpapi_key_here
+```
+
+5. 安装Ollama服务：
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh  # Linux/Mac
 winget install ollama  # Windows（需要管理员权限）
 
-
 ollama pull deepseek-r1:7b
-
 ```
 
 # 启动Ollama服务（Windows会自动注册服务）
@@ -73,14 +74,15 @@ ollama serve &
 
 1. 启动服务：
 ```bash
+.\rag_env\Scripts\activate
 python rag_demo.py
 ```
 2. 访问浏览器打开的本地地址（通常是`http://localhost:17995`）
 
 3. 操作流程：
    - 上传PDF文档（等待处理完成）
-   - 在提问区输入问题
-   - 查看实时生成的回答
+   - 在提问区输入问题（🎯时间敏感问题自动获取最新网络结果）
+   - 查看整合本地文档与网络搜索的智能回答
 
 ### 界面预览
 ![alt text](界面截图.png)
@@ -100,18 +102,40 @@ python rag_demo.py
    chunk_overlap=50  # 块间重叠
    ```
 
+3. 网络搜索设置：
+```python
+# 在combined_rag.py中调整搜索参数
+SEARCH_ENGINE = "google"  # 可选：bing, duckduckgo
+NUM_RESULTS = 5           # 默认获取5条网络结果
+```
+
+4. 结果排序策略：
+```python
+# 在combined_query_answer函数中调整排序逻辑
+sorted_items = sorted(
+    combined_items,
+    key=lambda x: (x["type"] != "web", -len(x["excerpt"]))
+)
+```
+
 ## 技术架构
-mermaid
+```mermaid
 graph TD
 A[用户界面] --> B[PDF解析]
 B --> C[文本向量化]
 C --> D[向量数据库]
 A --> E[问题输入]
-E --> F[语义检索]
-D --> F
-F --> G[大模型生成]
-G --> H[流式输出]
-
+E --> F{时间敏感?}
+F -->|是| G[网络搜索]
+G --> H[结果向量化]
+H --> D
+F -->|否| D
+D --> I[语义检索]
+I --> J[多源整合]
+J --> K[矛盾检测]
+K --> L[大模型生成]
+L --> M[流式输出]
+```
 
 ## RAG优化技巧
 
@@ -166,6 +190,27 @@ Q: 如何更换其他模型？
 A: 1. 使用`ollama pull <model-name>`下载新模型
    2. 修改代码中的模型名称参数
    3. 重启服务
+
+Q: 如何获取SerpAPI密钥？
+A: 1. 访问https://serpapi.com/ 注册账号
+   2. 在Dashboard获取API密钥
+   3. 填入项目的.env文件
+
+Q: 网络搜索结果如何与本地文档结合？
+A: 系统自动执行以下流程：
+   1. 时间敏感问题触发网络搜索
+   2. 结果向量化后存入同一数据库
+   3. 检索时综合本地与网络结果
+   4. 生成回答时标注数据来源
+
+Q: 如何禁用网络搜索功能？
+A: 在combined_rag.py中设置：
+```python
+# 改为False完全禁用网络功能
+SEARCH_ENABLED = True
+# 或保留功能但设置默认不搜索
+time_sensitive = False
+```
 
 ## 许可证
 MIT License
