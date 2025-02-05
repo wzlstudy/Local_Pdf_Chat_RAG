@@ -176,37 +176,44 @@ L --> M[流式输出]
 ## 常见问题
 
 Q: Ollama必须用Docker安装吗？
+
 A: 不需要！Ollama提供原生安装方式：
    - Linux/Mac: 直接运行安装脚本
    - Windows: 通过winget安装
    - 详细安装指南：https://ollama.com/download
 
 Q: 模型文件存储在哪里？
+
 A: 默认存储路径：
    - Windows: C:\Users\<用户名>\.ollama
    - Linux: ~/.ollama
    - Mac: ~/.ollama
 
 Q: 如何管理本地模型？
+
 A: 常用命令：
    - 查看已安装模型：ollama list
    - 删除模型：ollama rm <模型名>
    - 更新模型：ollama pull <模型名>
 
 Q: 处理大文件时内存不足怎么办？
+
 A: 尝试减小chunk_size参数值（建议不低于400）
 
 Q: 如何更换其他模型？
+
 A: 1. 使用`ollama pull <model-name>`下载新模型
    2. 修改代码中的模型名称参数
    3. 重启服务
 
 Q: 如何获取SerpAPI密钥？
+
 A: 1. 访问https://serpapi.com/ 注册账号
    2. 在Dashboard获取API密钥
    3. 填入项目的.env文件
 
 Q: 网络搜索结果如何与本地文档结合？
+
 A: 系统自动执行以下流程：
    1. 时间敏感问题触发网络搜索
    2. 结果向量化后存入同一数据库
@@ -214,6 +221,7 @@ A: 系统自动执行以下流程：
    4. 生成回答时标注数据来源
 
 Q: 如何禁用网络搜索功能？
+
 A: 在combined_rag.py中设置：
 ```python
 # 改为False完全禁用网络功能
