@@ -146,9 +146,31 @@ NUM_RESULTS = 5           # 默认获取5条网络结果
 
 ## 📦 安装依赖
 
+推荐使用以下方式安装依赖，可以显著提升安装速度：
+
 ```bash
-pip install -r requirements.txt
+# 创建虚拟环境
+python -m venv rag_env
+source rag_env/bin/activate  # Linux/Mac
+rag_env\Scripts\activate  # Windows
+
+# 更新 pip
+python -m pip install --upgrade pip
+
+# 方式1：使用预编译包安装（推荐，速度最快）
+pip install --only-binary :all: -r requirements.txt
+
+# 方式2：使用国内镜像源安装
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 方式3：如果上述方法都不行，可以尝试
+pip install --no-cache-dir -r requirements.txt
 ```
+
+注意事项：
+1. 建议使用 Python 3.9+ 版本
+2. Windows 用户可能需要安装 Visual C++ Build Tools
+3. 如果安装过程中遇到问题，可以尝试逐个安装依赖包
 
 ## 🚀 使用方法
 

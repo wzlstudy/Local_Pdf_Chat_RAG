@@ -1,16 +1,22 @@
-gradio==4.44.1
-chromadb==0.4.24
-sentence-transformers==2.6.1
-langchain==0.2.1
-pdfminer.six==20231228
-requests==2.32.3
-numpy==1.26.1
-tqdm==4.66.1
-typing-extensions==4.9.0
-httpx==0.27.0
-httpcore==1.0.5
-uvicorn==0.29.0
-optree>=0.13.0
-fastapi==0.111.0
-python-multipart==0.0.9
-python-dotenv==1.0.1
+# 核心依赖
+gradio>=4.44.1
+chromadb>=0.4.24
+sentence-transformers>=2.6.1
+pdfminer.six>=20231228
+requests>=2.32.3
+
+# PDF处理相关
+langchain>=0.2.1
+
+# 工具依赖
+numpy>=1.26.1
+tqdm>=4.66.1
+typing-extensions>=4.9.0
+
+# API相关
+httpx>=0.27.0
+httpcore>=1.0.5
+uvicorn>=0.29.0
+fastapi>=0.111.0
+python-multipart>=0.0.9
+python-dotenv>=1.0.1
