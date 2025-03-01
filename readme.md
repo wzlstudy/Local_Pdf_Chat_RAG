@@ -1,268 +1,355 @@
-# 本地RAG问答系统
+<div align="center">
+<h1>📚 本地化智能问答系统</h1>
+<p>
+<img src="https://img.shields.io/badge/Python-3.9%2B-blue" alt="Python版本">
+<img src="https://img.shields.io/badge/License-MIT-green" alt="证书">
+<img src="https://img.shields.io/badge/RAG-PDF%20%2B%20网络-orange" alt="RAG类型">
+<img src="https://img.shields.io/badge/UI-Gradio-blueviolet" alt="界面">
+<img src="https://img.shields.io/badge/API-FastAPI-teal" alt="API">
+</p>
+</div>
 
-🚀 基于本地大模型的智能文档问答系统，支持PDF文档解析与自然语言问答，🎯支持联网搜索增强能力，✨新增多文档处理与多轮对话功能
+## 📋 目录
 
-## 为什么选择本地RAG？
+- [📑 项目概述](#-项目概述)
+- [🌟 核心功能](#-核心功能)
+- [🔧 系统架构](#-系统架构)
+- [🚀 使用方法](#-使用方法)
+- [📦 依赖项](#-依赖项)
+- [🔄 系统流程](#-系统流程)
+- [📝 许可证](#-许可证)
 
-🔒 **私有数据安全**：全程本地处理，敏感文档无需上传第三方服务
+## 📑 项目概述
 
-⚡ **实时响应**：基于本地向量数据库实现毫秒级语义检索
+本项目是一个基于RAG（检索增强生成）技术的本地化智能问答系统，支持PDF文档处理和网络搜索，能够回答基于上传文档内容的问题，以及融合最新网络信息的查询。
 
-💡 **领域适配**：可针对专业领域文档定制知识库
+系统使用本地大语言模型进行推理，确保数据安全的同时提供高质量的问答服务。
 
-🌐 **离线/在线双模式**：支持本地文档与网络结果智能融合
+## 🌟 核心功能
 
-💰 **成本可控**：避免云服务按次计费，长期使用成本更低
+- 📁 **PDF文档处理**：上传并处理多个PDF文档，自动分割和向量化
+- 🔍 **智能问答**：基于本地文档的精准问答能力
+- 🌐 **联网搜索增强**：选择性启用网络搜索，获取最新信息（需配置API密钥）
+- ⚖️ **矛盾检测**：自动识别文档与网络信息间的矛盾并标注
+- 🚀 **双重访问方式**：Gradio网页界面 + RESTful API接口
+- 🔒 **本地部署**：数据不离开本地，保障信息安全
 
-## 功能特性
+## 🔧 系统架构
 
-### 核心功能
-📄 PDF文档解析与向量化存储
-🧠 基于DeepSeek-7B本地大模型
-⚡ 流式回答生成
-🔍 语义检索与上下文理解
-🌐 联网搜索增强（SerpAPI集成）
-🔗 多源结果智能整合与矛盾检测
-🖥️ 友好的Web交互界面
-
-### ✨ 新增特性
-- 🔄 **多文档处理**：支持同时上传和处理多个PDF文件
-- 💬 **多轮对话**：支持基于上下文的连续对话
-- 📊 **状态追踪**：实时显示文档处理进度和状态
-- 🌓 **暗色主题**：默认暗色主题，提供更好的阅读体验
-- 🔍 **源文档溯源**：回答中自动标注信息来源
-
-## 环境要求
-
-- Python 3.9+
-- 内存：至少8GB
-- 显存：至少4GB（推荐8GB）
-- SerpAPI账号（免费额度可用）
-
-## 安装步骤
-
-1. 克隆仓库：
-```bash
-git clone https://github.com/weiwill88/Local_Pdf_Chat_RAG
-cd Local_Pdf_Chat_RAG
+```mermaid
+graph TD
+    subgraph "用户交互层"
+        A[Gradio网页界面] --> |用户上传PDF| B(PDF处理模块)
+        A --> |用户提问| C(问答处理模块)
+        H[REST API] --> |文档上传请求| B
+        H --> |问答请求| C
+    end
+    
+    subgraph "数据处理层"
+        B --> |文本提取与分割| D[(向量数据库\nChromaDB)]
+        C --> |检索文档片段| D
+        C --> |时间敏感问题| E{是否启用联网}
+        E -->|是| F[SerpAPI联网搜索]
+        F --> |网络结果向量化| D
+    end
+    
+    subgraph "推理层"
+        D --> |相关文档片段| G[大语言模型\nOllama]
+        E -->|否| G
+        G --> |生成回答| C
+    end
+    
+    C --> |回答| A
+    C --> |回答| H
+    
+    subgraph "特殊功能"
+        I[矛盾检测模块] -.-> C
+        J[来源可信度评估] -.-> I
+    end
 ```
 
-2. 创建虚拟环境：
-```bash
-python -m venv rag_env
-source rag_env/bin/activate  # Linux/Mac
-rag_env\Scripts\activate  # Windows
-```
+### 🔦 功能特点
 
-3. 安装依赖：
+- 📄 **文档处理**：自动分割长文档，转换为向量表示并存储
+- 🧠 **语义理解**：通过向量相似度检索相关文本片段
+- 🤖 **自适应模型**：支持多种Ollama模型，默认使用deepseek-r1系列
+- ⏱️ **时间敏感性检测**：自动识别需要最新信息的问题
+- 🔄 **矛盾处理**：当本地文档与网络信息冲突时，提供多来源对比
+- 🎨 **主题自适应界面**：支持亮色/暗色模式
+
+## 🚀 使用方法
+
+### 环境准备
+
+1. **安装依赖项**：
+
 ```bash
 pip install -r requirements.txt
 ```
 
-4. 配置环境变量：
+2. **安装并启动Ollama服务**：
 ```bash
-# 复制示例文件
-cp .env.example .env
-# 编辑.env文件添加你的API密钥
-SERPAPI_KEY=your_serpapi_key_here
-```
-
-5. 安装Ollama服务：
-```bash
-curl -fsSL https://ollama.com/install.sh | sh  # Linux/Mac
-winget install ollama  # Windows（需要管理员权限）
-
-ollama pull deepseek-r1:7b
-
-# 启动Ollama服务（Windows会自动注册服务）
-ollama serve &
-```
-
-## 使用方法
-
-1. 启动服务：
-```bash
-.\rag_env\Scripts\activate
-python rag_demo.py
-```
-
-2. 访问浏览器打开的本地地址（通常是`http://localhost:17995`）
-
-3. 操作流程：
-   - 上传单个或多个PDF文档（支持批量处理）
-   - 等待处理完成，查看处理状态
-   - 在提问区输入问题
-     - 时间敏感问题自动获取最新网络结果
-     - 支持多轮连续对话
-   - 查看整合本地文档与网络搜索的智能回答
-   - 可随时清空对话重新开始
-
-### 新增功能说明
-
-#### 多文档处理
-- 支持同时上传多个PDF文件
-- 自动分割文本并生成向量嵌入
-- 实时显示每个文件的处理进度
-- 每次上传新文档会自动清理历史数据
-
-#### 多轮对话
-- 保留完整对话历史
-- 支持基于上下文的连续提问
-- 实时流式输出回答
-- 清晰的对话气泡界面
-
-#### 界面优化
-- 响应式布局设计
-- 默认暗色主题支持
-- 文件处理状态实时显示
-- 优雅的对话展示效果
-
-## 配置说明
-
-1. 模型配置：
-   - 修改`rag_demo.py`中的模型名称：
-   ```python
-   "model": "deepseek-r1:7b"  # 可替换为其他支持的模型
-   ```
-
-2. 性能调优：
-   - 调整`process_pdf`函数中的文本分割参数：
-   ```python
-   chunk_size=800  # 文本块大小
-   chunk_overlap=50  # 块间重叠
-   ```
-
-3. 网络搜索设置：
-```python
-# 在combined_rag.py中调整搜索参数
-SEARCH_ENGINE = "google"  # 可选：bing, duckduckgo
-NUM_RESULTS = 5           # 默认获取5条网络结果
-```
-
-## 🛠️ 技术栈
-
-- 向量数据库：ChromaDB
-- 文本嵌入：Sentence-Transformers (all-MiniLM-L6-v2)
-- LLM模型：Ollama (deepseek-r1:1.5b)
-- 前端框架：Gradio
-- PDF处理：pdfminer
-- 文本分割：LangChain
-
-## 📦 安装依赖
-
-推荐使用以下方式安装依赖，可以显著提升安装速度：
-
-```bash
-# 创建虚拟环境
-python -m venv rag_env
-source rag_env/bin/activate  # Linux/Mac
-rag_env\Scripts\activate  # Windows
-
-# 更新 pip
-python -m pip install --upgrade pip
-
-# 方式1：使用预编译包安装（推荐，速度最快）
-pip install --only-binary :all: -r requirements.txt
-
-# 方式2：使用国内镜像源安装
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-
-# 方式3：如果上述方法都不行，可以尝试
-pip install --no-cache-dir -r requirements.txt
-```
-
-注意事项：
-1. 建议使用 Python 3.9+ 版本
-2. Windows 用户可能需要安装 Visual C++ Build Tools
-3. 如果安装过程中遇到问题，可以尝试逐个安装依赖包
-
-## 🚀 使用方法
-
-1. **启动Ollama服务**
-```bash
+# 安装Ollama (根据系统访问 https://ollama.com/download)
+# 启动服务
 ollama serve
-```
-
-2. **拉取模型**
-```bash
+# 拉取模型(根据电脑配置自行选择)
 ollama pull deepseek-r1:1.5b
+ollama pull deepseek-r1:7b
+ollama pull deepseek-r1:14b
 ```
 
-3. **运行应用**
+3. **（可选）配置联网搜索**：
+在项目根目录创建.env文件，添加：
+```
+SERPAPI_KEY=您的SERPAPI密钥
+```
+
+可在SerpAPI官网免费注册获取密钥。
+
+### 启动服务
+
+1. **启动Gradio网页界面**：
 ```bash
 python rag_demo.py
 ```
 
-## 💡 功能说明
+2. **启动API服务**（如果需要把服务接入其他应用时才需要）：
+```bash
+python api_router.py
+```
 
-### 文档处理
-- 支持批量上传PDF文件
-- 自动分割文本并生成向量嵌入
-- 实时显示处理进度和状态
-- 每次上传新文档会自动清理历史数据
+### 使用方式
 
-### 问答功能
-- 支持多轮对话，保留对话历史
-- 实时流式输出回答
-- 显示信息来源，支持溯源
-- 可随时清空对话重新开始
+#### 网页界面
+- 访问自动打开的本地URL（通常为http://localhost:17995）
+- 上传PDF文档，点击"开始处理"
+- 在问题输入框中提问，可选择是否启用联网搜索
+- 点击"开始提问"获取回答
 
-### 界面特性
-- 响应式布局设计
-- 默认暗色主题
-- 清晰的文件处理状态显示
-- 优雅的对话气泡界面
+#### API接口
+- API文档自动生成并可在http://localhost:17995/docs访问。
+- 主要接口：
+  - `POST /api/upload`：上传PDF文档
+  - `POST /api/ask`：提交问题（支持联网搜索选项）
+  - `GET /api/status`：检查系统状态
+  - `GET /api/web_search_status`：检查联网功能状态
 
-## ⚙️ 配置说明
+## 📦 依赖项
 
-- 文本分块大小：800字符
-- 块重叠大小：50字符
-- 检索相关片段数：3
-- 请求超时时间：120秒
+详见requirements.txt文件，核心依赖包括：
+- gradio：构建交互界面
+- sentence-transformers：文本向量化
+- chromadb：向量数据库
+- pdfminer.six：PDF文本提取
+- langchain：文本分割
+- fastapi & uvicorn：API服务
 
-## 📝 注意事项
+## 🔄 系统流程
 
-1. 确保本地已安装并启动Ollama服务
-2. 首次使用需要下载模型，可能需要一些时间
-3. 处理大文件时可能需要较长时间，请耐心等待
-4. 建议每次问答会话使用相关的文档集
+### 内部系统流程
 
-### 📚 文档上传限制
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant UI as Gradio界面/API
+    participant PDF as PDF处理模块
+    participant Web as 网络搜索模块
+    participant VDB as 向量数据库
+    participant LLM as 大语言模型
 
-系统的文档处理能力主要受以下因素限制：
+    User->>UI: 上传PDF文档
+    UI->>PDF: 处理文档
+    PDF->>PDF: 文本提取
+    PDF->>PDF: 文本分割
+    PDF->>VDB: 向量化并存储
+    VDB-->>UI: 处理完成状态
+    UI-->>User: 显示处理结果
 
-1. **内存限制**：
-   - 文档向量化过程在内存中进行
-   - 建议单个PDF文件不超过50MB
-   - 总处理文档量建议不超过系统可用内存的1/4
-   - 8GB内存建议同时处理文档总量不超过500MB
+    User->>UI: 提问问题
+    UI->>UI: 检查是否启用联网
+    
+    alt 启用联网
+        UI->>UI: 检查API密钥
+        alt API密钥有效
+            UI->>Web: 执行联网搜索
+            Web->>VDB: 存储网络结果向量
+        else API密钥无效
+            UI-->>User: 显示联网失败提示
+        end
+    end
+    
+    UI->>VDB: 问题向量化与检索
+    VDB-->>UI: 返回相关片段
+    UI->>UI: 矛盾检测
+    UI->>LLM: 构建提示词
+    LLM-->>UI: 生成回答
+    UI-->>User: 显示带有来源的回答
+```
 
-2. **向量数据库限制**：
-   - ChromaDB对单个集合的向量数量无硬性限制
-   - 建议单次会话文档块总数不超过10,000个
-   - 按默认分块大小(800字符)计算，约等于800万字符
+### 数据流转图
 
-3. **处理时间考虑**：
-   - 文档越大，处理时间越长
-   - 建议单次上传文档数不超过10个
-   - 大型文档建议分批处理
+```mermaid
+flowchart LR
+    A[PDF文档] --> B[文本提取]
+    B --> C[文本分割器]
+    C --> D{向量化}
+    D --> E[(ChromaDB)]
+    
+    F[用户问题] --> G{是否启用联网?}
+    G -->|是| H[检查API密钥] 
+    H -->|有效| I[SerpAPI搜索]
+    H -->|无效| J[仅本地检索]
+    I --> K[网络结果向量化]
+    K --> E
+    G -->|否| J
+    
+    J --> L[问题向量化]
+    L --> M[向量相似度检索]
+    E --> M
+    M --> N[矛盾检测]
+    N --> O[提示词构建]
+    O --> P[LLM生成回答]
+    P --> Q[返回结果]
+```
 
-4. **性能优化建议**：
-   - 对于大型文档，可以调整chunk_size参数（增大分块大小）
-   - 可以根据实际需求调整chunk_overlap参数
-   - 必要时可以预处理PDF，去除非必要内容
+## 🔬 RAG系统实现细节与改进方向
 
-5. **最佳实践**：
-   - 建议按主题分批上传相关文档
-   - 处理完一批文档后再上传新批次
-   - 可以通过调整配置参数优化处理性能
+本系统的RAG实现包含以下几个关键组件的具体实现细节、当前局限性和可能的改进方向。这些信息可以帮助开发者了解系统的工作原理并进行针对性优化。
 
-注意：以上限制是基于一般使用场景的建议值，实际限制取决于系统配置和具体使用场景。
+### 1. 分块策略
 
-## 🤝 贡献指南
+**当前实现**：
+```python
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=800,
+    chunk_overlap=50
+)
+chunks = text_splitter.split_text(text)
+```
 
-欢迎提交Issue和Pull Request来帮助改进项目。
+**局限性**：
+- 使用固定大小的文本分块，未考虑文本的语义完整性
+- 简单的字符数量限制可能导致中断句子、段落或语义单元
+- 重叠区域较小，可能影响上下文连贯性
+- 未针对中文文本特性进行优化
 
-## �� 许可证
+**改进方向**：
+- 使用语义感知的分块策略，考虑自然段落和句子边界
+- 增加块重叠区域，提高上下文连贯性
+- 针对中文内容，使用段落、标点符号等作为分隔符
+- 实现动态分块大小，根据内容复杂度自适应调整
+- 可考虑如下实现：
+  ```python
+  text_splitter = RecursiveCharacterTextSplitter(
+      chunk_size=1200,
+      chunk_overlap=150,
+      separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""]
+  )
+  ```
 
-MIT License
+### 2. 向量化方法
+
+**当前实现**：
+```python
+EMBED_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+embeddings = EMBED_MODEL.encode(chunks)
+```
+
+**局限性**：
+- 使用通用的英文预训练模型，对中文支持有限
+- 未对中文文本进行预处理
+- 固定的嵌入维度(384)，在某些复杂文档场景下可能信息损失
+- 没有针对领域特定文档进行微调
+
+**改进方向**：
+- 使用专为中文优化的嵌入模型，如`paraphrase-multilingual-MiniLM-L12-v2`
+- 添加中文分词预处理步骤提高向量质量
+- 对特定领域文档微调嵌入模型
+- 实现句子级和文档级双重嵌入，提高检索精度
+- 示例改进实现：
+  ```python
+  # 添加中文分词预处理
+  def preprocess_chinese(text):
+      return " ".join(jieba.cut(text))
+  
+  # 使用中文优化模型
+  EMBED_MODEL = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+  processed_chunks = [preprocess_chinese(chunk) for chunk in chunks]
+  embeddings = EMBED_MODEL.encode(processed_chunks)
+  ```
+
+### 3. 检索策略
+
+**当前实现**：
+```python
+results = COLLECTION.query(
+    query_embeddings=query_embedding,
+    n_results=5,
+    include=['documents', 'metadatas']
+)
+```
+
+**局限性**：
+- 仅使用向量相似度检索，未考虑词频等其他信号
+- 固定返回结果数量，不考虑实际相关性
+- 没有相关性阈值筛选，可能返回不相关内容
+- 未利用问题类型进行检索策略调整
+
+**改进方向**：
+- 实现混合检索策略，结合向量检索和关键词检索(BM25)
+- 动态调整返回结果数量，基于相似度阈值
+- 添加相关性打分和筛选机制
+- 根据问题类型选择不同检索策略
+- 示例混合检索实现：
+  ```python
+  # 混合检索函数
+  def hybrid_search(question, n_results=10, semantic_weight=0.7):
+      # 向量检索
+      query_embedding = EMBED_MODEL.encode([question]).tolist()
+      semantic_results = COLLECTION.query(
+          query_embeddings=query_embedding,
+          n_results=n_results,
+          include=['documents', 'metadatas', 'distances']
+      )
+      
+      # BM25检索
+      bm25_results = search_with_bm25(question, top_k=n_results)
+      
+      # 结合两种结果
+      # ...合并逻辑...
+      
+      return combined_results
+  ```
+
+### 4. 重排策略
+
+**当前实现**：
+- 当前版本未实现专门的重排序机制
+- 仅依赖初始检索结果的相似度排序
+
+**局限性**：
+- 无法区分高质量和低质量的检索结果
+- 没有考虑文本的多样性，可能出现内容重复
+- 未针对实际问答相关性进行重排
+- 缺乏上下文关联性评估
+
+**改进方向**：
+- 实现最大边际相关性(MMR)重排序，平衡相关性和多样性
+- 添加基于交叉编码器的精细重排，进一步提高相关性评估准确度
+- 考虑文档来源的可信度和时效性进行重排
+- 添加基于注意力权重的上下文关联性分析
+- 示例MMR重排序实现：
+  ```python
+  def mmr_rerank(query_embedding, candidate_embeddings, candidates_data, lambda_param=0.6, k=5):
+      """最大边际相关性算法，平衡相关性和多样性"""
+      # ...MMR实现逻辑...
+      return reranked_indices
+  ```
+
+通过以上改进，可以显著提升RAG系统的性能和用户体验。开发者可以根据自己的应用场景和需求，选择性地实现这些优化措施。
+
+这个系统采用了最新的RAG架构，可以根据用户偏好灵活切换联网搜索能力，同时保持对本地文档的高质量理解。无论是通过直观的网页界面还是功能完备的API接口，都能满足不同场景下的文档问答需求。
+
+## 许可证
+
+本项目采用MIT许可证。
