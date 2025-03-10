@@ -385,17 +385,17 @@ def call_siliconflow_api(prompt, temperature=0.7, max_tokens=1024):
 <div align="center" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; margin-top: 30px;">
   <div style="text-align: center; margin: 10px;">
     <img src="images/公众号二维码.jpg" alt="公众号" width="200" />
-    <p>公众号: RAG开发者</p>
+    <p>公众号: 韦东东</p>
   </div>
   
   <div style="text-align: center; margin: 10px;">
     <img src="images/小红书二维码.jpg" alt="小红书" width="200" />
-    <p>小红书: RAG实战派</p>
+    <p>小红书: 韦东东</p>
   </div>
   
   <div style="text-align: center; margin: 10px;">
     <img src="images/知识星球二维码.jpg" alt="知识星球" width="200" />
-    <p>知识星球: RAG高级开发</p>
+    <p>知识星球: 企业RAG从入门到落地</p>
   </div>
 </div>
 
