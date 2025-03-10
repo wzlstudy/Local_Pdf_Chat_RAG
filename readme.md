@@ -17,6 +17,7 @@
 - [🚀 使用方法](#-使用方法)
 - [📦 依赖项](#-依赖项)
 - [🔄 系统流程](#-系统流程)
+- [🚀 高级功能](#-高级功能)
 - [📝 许可证](#-许可证)
 
 ## 📑 项目概述
@@ -31,6 +32,8 @@
 - 🔍 **智能问答**：基于本地文档的精准问答能力
 - 🌐 **联网搜索增强**：选择性启用网络搜索，获取最新信息（需配置API密钥）
 - ⚖️ **矛盾检测**：自动识别文档与网络信息间的矛盾并标注
+- 🔄 **混合检索**：结合语义检索和BM25检索，提高检索准确性
+- 📊 **结果重排序**：支持交叉编码器和LLM重排序，优化相关性排序
 - 🚀 **双重访问方式**：Gradio网页界面 + RESTful API接口
 - 🔒 **本地部署**：数据不离开本地，保障信息安全
 
@@ -53,8 +56,16 @@ graph TD
         F --> |网络结果向量化| D
     end
     
+    subgraph "检索与重排层"
+        D --> |语义检索| S[语义重排序]
+        D --> |BM25检索| T[BM25索引]
+        S --> |重排结果| U[混合检索合并]
+        T --> |索引结果| U
+        U --> |最终结果| G
+    end
+    
     subgraph "推理层"
-        D --> |相关文档片段| G[大语言模型\nOllama]
+        U --> |相关文档片段| G[大语言模型\nOllama]
         E -->|否| G
         G --> |生成回答| C
     end
@@ -72,59 +83,83 @@ graph TD
 
 - 📄 **文档处理**：自动分割长文档，转换为向量表示并存储
 - 🧠 **语义理解**：通过向量相似度检索相关文本片段
-- 🤖 **自适应模型**：支持多种Ollama模型，默认使用deepseek-r1系列
-- ⏱️ **时间敏感性检测**：自动识别需要最新信息的问题
-- 🔄 **矛盾处理**：当本地文档与网络信息冲突时，提供多来源对比
+- 🔎 **BM25检索**：结合传统词频检索，提高召回率
+- 🤖 **多模型支持**：支持本地Ollama模型以及SiliconFlow云端模型，可动态切换
+- 🧠 **思维链展示**：显示模型思考过程，帮助理解回答生成逻辑
 - 🎨 **主题自适应界面**：支持亮色/暗色模式
 
 ## 🚀 使用方法
 
 ### 环境准备
 
-1. **安装依赖项**：
+1. **创建并激活虚拟环境**：
+
+```bash
+# 使用venv创建虚拟环境（推荐）
+python -m venv rag_env
+# 激活虚拟环境
+# Windows
+rag_env\Scripts\activate
+# Linux/macOS
+source rag_env/bin/activate
+
+# 或者使用conda创建虚拟环境
+conda create -n rag_env python=3.9
+conda activate rag_env
+```
+
+2. **安装依赖项**：
 
 ```bash
 pip install -r requirements.txt
 ```
 
-2. **安装并启动Ollama服务**：
+3. **安装并启动Ollama服务**：
 ```bash
 # 安装Ollama (根据系统访问 https://ollama.com/download)
 # 启动服务
 ollama serve
 # 拉取模型(根据电脑配置自行选择)
 ollama pull deepseek-r1:1.5b
-ollama pull deepseek-r1:7b
-ollama pull deepseek-r1:14b
+ollama pull deepseek-r1:7b等
 ```
 
-3. **（可选）配置联网搜索**：
+4. **（可选）配置联网搜索**：
 在项目根目录创建.env文件，添加：
 ```
 SERPAPI_KEY=您的SERPAPI密钥
 ```
 
-可在SerpAPI官网免费注册获取密钥。
+5. **（可选）配置SiliconFlow API**：
+在.env文件中添加SiliconFlow API密钥以启用云端模型支持：
+```
+SILICONFLOW_API_KEY=您的SiliconFlow API密钥
+```
+SiliconFlow提供更强大的云端模型，可作为本地模型的备选方案，特别适合处理复杂问题或本地算力有限的情况。
 
 ### 启动服务
 
 1. **启动Gradio网页界面**：
 ```bash
-python rag_demo.py
+python rag_demo_pro.py
 ```
+系统会自动检查环境，确认Ollama服务是否正常运行，并尝试在可用端口(17995-17999)启动服务。
 
 2. **启动API服务**（如果需要把服务接入其他应用时才需要）：
 ```bash
 python api_router.py
 ```
+注意：当前版本中API服务需要单独下载`api_router.py`文件，该文件不包含在基础代码包中。
 
 ### 使用方式
 
 #### 网页界面
-- 访问自动打开的本地URL（通常为http://localhost:17995）
+- 服务启动后会自动打开浏览器访问本地URL（通常为http://localhost:17995）
 - 上传PDF文档，点击"开始处理"
 - 在问题输入框中提问，可选择是否启用联网搜索
+- 从模型选择下拉菜单中选择使用本地Ollama模型或云端SiliconFlow模型
 - 点击"开始提问"获取回答
+- 思考过程会在回答下方以可折叠方式显示，点击即可查看模型思考链
 
 #### API接口
 - API文档自动生成并可在http://localhost:17995/docs访问。
@@ -143,6 +178,10 @@ python api_router.py
 - pdfminer.six：PDF文本提取
 - langchain：文本分割
 - fastapi & uvicorn：API服务
+- python-dotenv：环境变量管理
+- requests & urllib3：网络请求处理
+- jieba：中文分词（用于改进向量化）
+- rank_bm25：实现BM25检索算法
 
 ## 🔄 系统流程
 
@@ -155,6 +194,8 @@ sequenceDiagram
     participant PDF as PDF处理模块
     participant Web as 网络搜索模块
     participant VDB as 向量数据库
+    participant BM25 as BM25索引
+    participant Rank as 重排序模块
     participant LLM as 大语言模型
 
     User->>UI: 上传PDF文档
@@ -162,6 +203,7 @@ sequenceDiagram
     PDF->>PDF: 文本提取
     PDF->>PDF: 文本分割
     PDF->>VDB: 向量化并存储
+    PDF->>BM25: 构建BM25索引
     VDB-->>UI: 处理完成状态
     UI-->>User: 显示处理结果
 
@@ -179,7 +221,12 @@ sequenceDiagram
     end
     
     UI->>VDB: 问题向量化与检索
-    VDB-->>UI: 返回相关片段
+    UI->>BM25: BM25检索
+    VDB-->>Rank: 返回语义相关片段
+    BM25-->>Rank: 返回关键词相关片段
+    Rank->>Rank: 交叉编码器/LLM重排序
+    Rank->>Rank: 混合检索结果合并
+    Rank-->>UI: 返回最终相关片段
     UI->>UI: 矛盾检测
     UI->>LLM: 构建提示词
     LLM-->>UI: 生成回答
@@ -194,162 +241,187 @@ flowchart LR
     B --> C[文本分割器]
     C --> D{向量化}
     D --> E[(ChromaDB)]
+    C --> F[BM25索引构建]
+    F --> G[(BM25索引)]
     
-    F[用户问题] --> G{是否启用联网?}
-    G -->|是| H[检查API密钥] 
-    H -->|有效| I[SerpAPI搜索]
-    H -->|无效| J[仅本地检索]
-    I --> K[网络结果向量化]
-    K --> E
-    G -->|否| J
+    H[用户问题] --> I{是否启用联网?}
+    I -->|是| J[检查API密钥] 
+    J -->|有效| K[SerpAPI搜索]
+    J -->|无效| L[仅本地检索]
+    K --> M[网络结果向量化]
+    M --> E
+    I -->|否| L
     
-    J --> L[问题向量化]
-    L --> M[向量相似度检索]
-    E --> M
-    M --> N[矛盾检测]
-    N --> O[提示词构建]
-    O --> P[LLM生成回答]
-    P --> Q[返回结果]
+    L --> N[问题向量化]
+    N --> O[向量相似度检索]
+    E --> O
+    L --> P[BM25检索]
+    G --> P
+    
+    O --> Q[检索结果]
+    P --> Q
+    Q --> R{重排序方法选择}
+    R -->|交叉编码器| S[交叉编码器重排序]
+    R -->|LLM重排序| T[LLM相关性评分]
+    S --> U[混合检索合并]
+    T --> U
+    U --> V[矛盾检测]
+    V --> W[提示词构建]
+    W --> X[LLM生成回答]
+    X --> Y[返回结果]
 ```
 
-## 🔬 RAG系统实现细节与改进方向
+## 🚀 高级功能
 
-本系统的RAG实现包含以下几个关键组件的具体实现细节、当前局限性和可能的改进方向。这些信息可以帮助开发者了解系统的工作原理并进行针对性优化。
+系统实现了多种高级RAG功能，提高问答质量和准确性：
 
-### 1. 分块策略
+### 1. BM25检索
 
-**当前实现**：
+使用经典的BM25算法进行关键词检索，与向量检索互补，提高召回率：
+
 ```python
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=800,
-    chunk_overlap=50
-)
-chunks = text_splitter.split_text(text)
+class BM25IndexManager:
+    def build_index(self, documents, doc_ids):
+        # 构建BM25索引
+        
+    def search(self, query, top_k=5):
+        # 基于BM25算法检索相关文档
 ```
 
-**局限性**：
-- 使用固定大小的文本分块，未考虑文本的语义完整性
-- 简单的字符数量限制可能导致中断句子、段落或语义单元
-- 重叠区域较小，可能影响上下文连贯性
-- 未针对中文文本特性进行优化
+### 2. 重排序策略
 
-**改进方向**：
-- 使用语义感知的分块策略，考虑自然段落和句子边界
-- 增加块重叠区域，提高上下文连贯性
-- 针对中文内容，使用段落、标点符号等作为分隔符
-- 实现动态分块大小，根据内容复杂度自适应调整
-- 可考虑如下实现：
-  ```python
-  text_splitter = RecursiveCharacterTextSplitter(
-      chunk_size=1200,
-      chunk_overlap=150,
-      separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""]
-  )
-  ```
+提供两种重排序方法优化检索结果的相关性：
 
-### 2. 向量化方法
-
-**当前实现**：
+- **交叉编码器重排序**：使用交叉编码器模型评估查询与文档片段的相关性
 ```python
-EMBED_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
-embeddings = EMBED_MODEL.encode(chunks)
+def rerank_with_cross_encoder(query, docs, doc_ids, metadata_list, top_k=5):
+    # 使用交叉编码器进行重排序
 ```
 
-**局限性**：
-- 使用通用的英文预训练模型，对中文支持有限
-- 未对中文文本进行预处理
-- 固定的嵌入维度(384)，在某些复杂文档场景下可能信息损失
-- 没有针对领域特定文档进行微调
+- **LLM重排序**：利用大语言模型为每个文档片段打分
+```python
+def rerank_with_llm(query, docs, doc_ids, metadata_list, top_k=5):
+    # 使用LLM进行重排序
+```
 
-**改进方向**：
-- 使用专为中文优化的嵌入模型，如`paraphrase-multilingual-MiniLM-L12-v2`
-- 添加中文分词预处理步骤提高向量质量
-- 对特定领域文档微调嵌入模型
-- 实现句子级和文档级双重嵌入，提高检索精度
-- 示例改进实现：
-  ```python
-  # 添加中文分词预处理
-  def preprocess_chinese(text):
-      return " ".join(jieba.cut(text))
+### 3. 混合检索合并
+
+将不同来源的检索结果智能合并，平衡各种检索策略的优势：
+
+```python
+def hybrid_merge(semantic_results, bm25_results, alpha=0.7):
+    # 合并语义检索和BM25检索结果
+```
+
+### 4. 文档块查看与管理
+
+提供文档块详细信息查看功能，帮助理解检索结果：
+
+```python
+def get_document_chunks(progress=gr.Progress()):
+    # 获取所有文档块
+    
+def show_chunk_details(evt: gr.SelectData, chunks):
+    # 显示文档块详细信息
+```
+
+### 5. 递归检索与迭代查询
+
+实现迭代式深度检索，通过分析当前结果自动生成后续查询：
+
+```python
+def recursive_retrieval(initial_query, max_iterations=3, enable_web_search=False, model_choice="ollama"):
+    # 迭代检索，深入探索问题的多个方面
+```
+
+系统会自动分析初次检索结果，判断是否需要进一步查询，并根据判断生成新的查询问题，最多迭代3次。这种方式能更全面地处理复杂问题，获取更深入的信息。
+
+### 6. 多模型支持
+
+系统支持两种模型选择，适应不同应用场景：
+
+- **本地Ollama模型**：默认选项，不需要联网，保护数据安全
+- **SiliconFlow云端模型**：当处理复杂问题或需要更高质量回答时的备选方案
+
+```python
+def call_siliconflow_api(prompt, temperature=0.7, max_tokens=1024):
+    # 调用SiliconFlow云端API获取高质量回答
+```
+
+用户可以根据问题复杂度和本地算力情况，灵活切换模型。
+
+## 🖼️ 系统演示
+
+以下是系统的实际运行效果展示：
+
+<div align="center">
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-bottom: 20px;">
+    <div style="flex: 1; min-width: 300px; max-width: 500px;">
+      <img src="images/demo1.png" alt="文档上传与处理界面" width="100%" />
+      <p>图1: 文档上传与处理界面</p>
+    </div>
+    <div style="flex: 1; min-width: 300px; max-width: 500px;">
+      <img src="images/demo2.png" alt="问答对话演示" width="100%" />
+      <p>图2: 问答对话演示</p>
+    </div>
+  </div>
   
-  # 使用中文优化模型
-  EMBED_MODEL = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-  processed_chunks = [preprocess_chinese(chunk) for chunk in chunks]
-  embeddings = EMBED_MODEL.encode(processed_chunks)
-  ```
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+    <div style="flex: 1; min-width: 300px; max-width: 500px;">
+      <img src="images/demo3.png" alt="终端显示日志" width="100%" />
+      <p>图3: 终端显示日志</p>
+    </div>
+    <div style="flex: 1; min-width: 300px; max-width: 500px;">
+      <img src="images/demo4.png" alt="思维链展示" width="100%" />
+      <p>图4: 思维链展示功能</p>
+    </div>
+  </div>
+</div>
 
-### 3. 检索策略
+## 📞 联系与支持
 
-**当前实现**：
-```python
-results = COLLECTION.query(
-    query_embeddings=query_embedding,
-    n_results=5,
-    include=['documents', 'metadatas']
-)
-```
+如果您对本项目有任何疑问或建议，欢迎通过以下方式联系我：
 
-**局限性**：
-- 仅使用向量相似度检索，未考虑词频等其他信号
-- 固定返回结果数量，不考虑实际相关性
-- 没有相关性阈值筛选，可能返回不相关内容
-- 未利用问题类型进行检索策略调整
+<div align="center" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; margin-top: 30px;">
+  <div style="text-align: center; margin: 10px;">
+    <img src="images/公众号二维码.jpg" alt="公众号" width="200" />
+    <p>公众号: RAG开发者</p>
+  </div>
+  
+  <div style="text-align: center; margin: 10px;">
+    <img src="images/小红书二维码.jpg" alt="小红书" width="200" />
+    <p>小红书: RAG实战派</p>
+  </div>
+  
+  <div style="text-align: center; margin: 10px;">
+    <img src="images/知识星球二维码.jpg" alt="知识星球" width="200" />
+    <p>知识星球: RAG高级开发</p>
+  </div>
+</div>
 
-**改进方向**：
-- 实现混合检索策略，结合向量检索和关键词检索(BM25)
-- 动态调整返回结果数量，基于相似度阈值
-- 添加相关性打分和筛选机制
-- 根据问题类型选择不同检索策略
-- 示例混合检索实现：
-  ```python
-  # 混合检索函数
-  def hybrid_search(question, n_results=10, semantic_weight=0.7):
-      # 向量检索
-      query_embedding = EMBED_MODEL.encode([question]).tolist()
-      semantic_results = COLLECTION.query(
-          query_embeddings=query_embedding,
-          n_results=n_results,
-          include=['documents', 'metadatas', 'distances']
-      )
-      
-      # BM25检索
-      bm25_results = search_with_bm25(question, top_k=n_results)
-      
-      # 结合两种结果
-      # ...合并逻辑...
-      
-      return combined_results
-  ```
+## 🚀 进阶计划 - 知识星球专属内容
 
-### 4. 重排策略
+在知识星球【RAG高级开发】中，我将提供本开源项目的进阶版本和专业支持：
 
-**当前实现**：
-- 当前版本未实现专门的重排序机制
-- 仅依赖初始检索结果的相似度排序
+### 高级功能迭代
 
-**局限性**：
-- 无法区分高质量和低质量的检索结果
-- 没有考虑文本的多样性，可能出现内容重复
-- 未针对实际问答相关性进行重排
-- 缺乏上下文关联性评估
+- 🔥 **多模态RAG**：支持图片、表格和混合文档的智能问答
+- 🧠 **Agent框架集成**：将RAG与Agent框架结合，实现更复杂的任务自动化
+- 🔄 **自适应检索策略**：根据问题类型自动调整检索参数和策略
+- 📊 **企业级数据连接器**：连接数据库、API和其他企业数据源
+- 🛠 **插件系统**：可扩展的插件架构，支持自定义功能模块
 
-**改进方向**：
-- 实现最大边际相关性(MMR)重排序，平衡相关性和多样性
-- 添加基于交叉编码器的精细重排，进一步提高相关性评估准确度
-- 考虑文档来源的可信度和时效性进行重排
-- 添加基于注意力权重的上下文关联性分析
-- 示例MMR重排序实现：
-  ```python
-  def mmr_rerank(query_embedding, candidate_embeddings, candidates_data, lambda_param=0.6, k=5):
-      """最大边际相关性算法，平衡相关性和多样性"""
-      # ...MMR实现逻辑...
-      return reranked_indices
-  ```
+### 实战案例精讲
 
-通过以上改进，可以显著提升RAG系统的性能和用户体验。开发者可以根据自己的应用场景和需求，选择性地实现这些优化措施。
+- 📈 **机械加工维保知识库**：设备手册及维修记录等问答实现
+- 📑 **法律文档顾问**：合同审核与法律咨询助手实现等
 
-这个系统采用了最新的RAG架构，可以根据用户偏好灵活切换联网搜索能力，同时保持对本地文档的高质量理解。无论是通过直观的网页界面还是功能完备的API接口，都能满足不同场景下的文档问答需求。
+
+
+按需加入！
 
 ## 许可证
 
 本项目采用MIT许可证。
+
+

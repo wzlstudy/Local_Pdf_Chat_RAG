@@ -10,6 +10,8 @@ markdown>=3.4.3
 fastapi>=0.104.1
 uvicorn>=0.23.2
 python-multipart>=0.0.6
+urllib3>=1.26.16
+jieba>=0.42.1
 
 # PDF处理相关
 
@@ -17,6 +19,7 @@ python-multipart>=0.0.6
 numpy>=1.26.1
 tqdm>=4.66.1
 typing-extensions>=4.9.0
+rank-bm25>=0.2.2
 
 # API相关
 httpx>=0.27.0
